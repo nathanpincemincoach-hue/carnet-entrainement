@@ -1,6 +1,6 @@
 // Service worker : garde Carnet Fluide disponible hors connexion (salle sans réseau).
 // VERSION change à chaque build : les téléphones prennent la nouvelle version au lancement suivant.
-const VERSION = "carnet-00c8cf1154";
+const VERSION = "carnet-befb1b4c13";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 const FONTS = "carnet-fonts";
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
