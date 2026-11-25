@@ -359,7 +359,7 @@ function itemView(it){const e=exOf(it);return{name:e?e.name:it.name,muscle:e?e.m
 function prioOf(p,m){return(p&&p.priorities&&p.priorities[m])||{level:"off",target:0}}
 function plannedVolume(p){const v={},f={};for(const s of p.sessions||[]){const seen=new Set();for(const it of s.items||[]){const m=itemView(it).muscle;if(!m)continue;v[m]=(v[m]||0)+(+it.sets||0);seen.add(m)}seen.forEach(m=>f[m]=(f[m]||0)+1)}return{v,f}}
 function estimate(items){const groups=[];for(const it of items||[]){const g=groups[groups.length-1];if(it.ss&&g&&g.ss===it.ss)g.items.push(it);else groups.push({ss:it.ss,items:[it]})}
-  let sec=0;for(const g of groups){const rounds=Math.max(0,...g.items.map(i=>+i.sets||0));if(!rounds)continue;const rest=Math.max(...g.items.map(i=>+i.rest||restDef(itemView(i).type)));sec+=rounds*(g.items.length*45+rest)+60}
+  let sec=0;for(const g of groups){const rounds=Math.max(0,...g.items.map(i=>+i.sets||0));if(!rounds)continue;const rest=g.items.reduce((a,i)=>a+(+i.rest||restDef(itemView(i).type)),0);sec+=rounds*(g.items.length*45+rest)+60}
   return items&&items.length?Math.round(sec/60)+5:0}
 function ssMapOf(its){its=its||[];const m={};let k=0;its.forEach(i=>{if(i.ss&&!m[i.ss]&&its.filter(x=>x.ss===i.ss).length>1){m[i.ss]={i:k,l:"ABCDEFGH"[k%8]};k++}});return m}
 function exList(its){its=its||[];const m=ssMapOf(its);return h("div",{class:"exlist"},its.map(it=>{const v=itemView(it),sl=it.ss&&m[it.ss];
@@ -429,14 +429,13 @@ function viewLive(){const L=S.live;const p=S.programs.get(L.programId);
       h("div",{class:"small muted num"},done+" / "+total+" séries · "+mins+" min")),
     h("div",{class:"bar b"},h("i",{style:"width:"+(total?done/total*100:0)+"%"})),
     (()=>{let k=0;return blocks.map(b=>{if(b.length<2)return h("div",{class:"card"},liveItem(b[0],p,b));const i=k++;
-      return h("div",{class:"card ss-wrap",style:"--ssc:var(--ss"+(i%6+1)+")"},h("div",{class:"ssl",style:"padding:10px 16px 0"},h("b",null,"ABCDEFGH"[i%8]),"Superset · enchaîne sans repos"),b.map(it=>liveItem(it,p,b)))})})(),
+      return h("div",{class:"card ss-wrap",style:"--ssc:var(--ss"+(i%6+1)+")"},h("div",{class:"ssl",style:"padding:10px 16px 0"},h("b",null,"ABCDEFGH"[i%8]),"Superset · en alternance, repos après chaque exo"),b.map(it=>liveItem(it,p,b)))})})(),
     h("div",{class:"row"},h("button",{class:"btn",onclick:()=>openPicker({title:"Ajouter un exercice",onPick:ex=>{L.items.push(liveFromEx(ex));persistLive();render()}})},"+ Ajouter un exercice")),
     finishPanel())}
 function liveFromEx(ex){return{key:uid(),exId:ex.id,name:ex.name,muscle:ex.muscle,type:ex.type,video:ex.video||null,ss:null,reps:repsDef(ex.type),rir:"0-2",rest:restDef(ex.type),sets:[0,1,2].map(()=>({kg:"",reps:"",rir:"",done:false}))}}
 function liveItem(it,p,block){const lp=lastPerf(it);const mx=repsMax(it.reps);let hint=null;
   if(lp){const ls=lp.entry.sets||[];if(mx&&ls.length&&ls.every(x=>(+x.reps||0)>=mx))hint="Haut de fourchette atteint partout la dernière fois : monte la charge.";}
   const prio=p?prioOf(p,it.muscle).level:"off";const video=safeUrl(it.video);
-  const isLastInBlock=block[block.length-1]===it;
   return h("div",{class:"ex"},
     h("div",{class:"ex-h"},h("div",{class:"grow"},h("div",{class:"ex-name"},it.name),
       h("div",{class:"row small muted",style:"margin-top:3px"},h("span",{class:"tag "+(LV[prio]||LV.off).cls},it.muscle||"?"),h("span",{class:"num"},it.sets.length+" × "+it.reps+" · RIR "+it.rir+" · repos "+fmtRest(it.rest)),video?h("a",{href:video,target:"_blank",rel:"noopener"},"Vidéo"):null)),
@@ -451,7 +450,7 @@ function liveItem(it,p,block){const lp=lastPerf(it);const mx=repsMax(it.reps);le
         h("select",{id:"ri-"+it.key+"-"+k,"aria-label":"RIR série "+(k+1),onchange:e=>{st.rir=e.target.value;persistLive()}},["","0","1","2","3","4+"].map(o=>h("option",{value:o},o===""?"–":o))),
         h("button",{class:"done-btn","aria-pressed":String(!!st.done),"aria-label":"Valider la série "+(k+1),onclick:()=>{st.done=!st.done;
           if(st.done&&!st.reps&&last)st.reps=String(last.reps);if(st.done&&!st.kg&&last&&last.kg!=null)st.kg=String(last.kg);
-          persistLive();if(st.done&&isLastInBlock)startTimer(it.rest);render()}},"✓")]})),
+          persistLive();if(st.done)startTimer(it.rest);render()}},"✓")]})),
     h("div",{class:"row",style:"margin-top:8px"},
       h("button",{class:"btn ghost small",onclick:()=>{const l=it.sets[it.sets.length-1];it.sets.push({kg:l?l.kg:"",reps:"",rir:"",done:false});persistLive();render()}},"+ série"),
       it.sets.length>1?h("button",{class:"btn ghost small",onclick:()=>{it.sets.pop();persistLive();render()}},"− série"):null,
